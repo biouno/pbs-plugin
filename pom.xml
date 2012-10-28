@@ -25,4 +25,11 @@
       <url>http://repo.jenkins-ci.org/public/</url>
     </pluginRepository>
   </pluginRepositories>
+  <dependencies>
+  	<dependency>
+  		<groupId>com.tupilabs</groupId>
+  		<artifactId>pbs-java-api</artifactId>
+  		<version>0.1</version>
+  	</dependency>
+  </dependencies>
 </project>
