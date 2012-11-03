@@ -21,9 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package jenkins.plugins.pbs.slave;
+package jenkins.plugins.pbs.slaves;
 
 import hudson.Extension;
+import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Slave;
 import hudson.slaves.NodeProperty;
@@ -32,6 +33,7 @@ import hudson.slaves.RetentionStrategy;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -43,6 +45,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class PBSSlave extends Slave {
 
 	private static final long serialVersionUID = -6684643958815580629L;
+	
+	private static final Logger LOGGER = Logger.getLogger(PBSSlave.class.getName());
 
 	/*
 	 * Due to warning defined in the inherited types.
@@ -53,10 +57,27 @@ public class PBSSlave extends Slave {
 		super(name, nodeDescription, remoteFS, numExecutors, mode, labelString, launcher, retentionStrategy, nodeProperties);
 	}
 	
+	/* (non-Javadoc)
+	 * @see hudson.model.Slave#createComputer()
+	 */
+	@Override
+	public Computer createComputer() {
+		LOGGER.info("Creating a new PBS Slave");
+		return new PBSSlaveComputer(this);
+	}
+	
 	@Extension
     public static final class DescriptorImpl extends SlaveDescriptor {
         public String getDisplayName() {
             return "PBS Slave";
+        }
+        
+        /* (non-Javadoc)
+         * @see hudson.slaves.NodeDescriptor#isInstantiable()
+         */
+        @Override
+        public boolean isInstantiable() {
+        	return true;
         }
     }
 

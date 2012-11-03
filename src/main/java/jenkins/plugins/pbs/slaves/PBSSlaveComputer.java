@@ -21,9 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package jenkins.plugins.pbs.slave;
+package jenkins.plugins.pbs.slaves;
 
-import hudson.model.Slave;
+import java.util.logging.Logger;
+
 import hudson.slaves.SlaveComputer;
 
 /**
@@ -32,12 +33,22 @@ import hudson.slaves.SlaveComputer;
  * @since 0.1
  */
 public class PBSSlaveComputer extends SlaveComputer {
+	
+	private static final Logger LOGGER = Logger.getLogger(PBSSlaveComputer.class.getName());
 
 	/**
 	 * @param slave
 	 */
-	public PBSSlaveComputer(Slave slave) {
+	public PBSSlaveComputer(PBSSlave slave) {
 		super(slave);
+	}
+	
+	/* (non-Javadoc)
+	 * @see hudson.slaves.SlaveComputer#getNode()
+	 */
+	@Override
+	public PBSSlave getNode() {
+		return (PBSSlave)super.getNode();
 	}
 
 }
