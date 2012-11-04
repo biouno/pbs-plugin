@@ -1,6 +1,33 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt">
-  <l:pane width="3" title="PBS Queue" id="buildHistory">
-    <h2>${it.description}</h2>
+  <l:pane width="3" title="PBS Status" id="pbs">
+    <j:forEach var="computer" items="${it.computers}">
+        <tbody>
+            <tr>
+                <th class='pane' colspan='3'>
+                    ${computer.name}
+                </th>
+            </tr>
+        </tbody>
+        <colgroup>
+            <col width="1*"></col>
+            <col width="200*"></col>
+            <col width="24"></col>
+        </colgroup>
+        <tbody>
+            <j:forEach var="queue" items="${computer.getQueues()}">
+            <tr>
+                <th class='pane' colspan='3'>Queue: ${queue.name}</th>
+            </tr>
+                <j:forEach var="job" items="${computer.getJobs(queue)}">
+            <tr>
+                <td class='pane'>${job.id}</td>
+                <td class='pane'>${job.name}</td>
+                <td class='pane'>TBD: </td>
+            </tr>
+                </j:forEach>
+            </j:forEach>
+        </tbody>
+    </j:forEach>
   </l:pane>
 </j:jelly>

@@ -23,7 +23,13 @@
  */
 package jenkins.plugins.pbs.slaves;
 
+import hudson.model.Computer;
 import hudson.widgets.Widget;
+
+import java.util.LinkedList;
+import java.util.List;
+
+import jenkins.model.Jenkins;
 
 /**
  * 
@@ -36,4 +42,13 @@ public class PBSWidget extends Widget {
 		return "PBS Widget";
 	}
 	
+	public List<Computer> getComputers() {
+		final List<Computer> pbsComputers = new LinkedList<Computer>();
+		for(Computer computer : Jenkins.getInstance().getComputers()) {
+			if(computer instanceof PBSSlaveComputer) {
+				pbsComputers.add(computer);
+			}
+		}
+		return pbsComputers;
+	}
 }

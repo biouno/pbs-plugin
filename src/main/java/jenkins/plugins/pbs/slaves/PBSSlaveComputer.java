@@ -23,9 +23,16 @@
  */
 package jenkins.plugins.pbs.slaves;
 
+import hudson.remoting.Callable;
+import hudson.slaves.SlaveComputer;
+
+import java.io.IOException;
+import java.util.List;
 import java.util.logging.Logger;
 
-import hudson.slaves.SlaveComputer;
+import com.tupilabs.pbs.PBS;
+import com.tupilabs.pbs.model.Job;
+import com.tupilabs.pbs.model.Queue;
 
 /**
  * 
@@ -50,5 +57,31 @@ public class PBSSlaveComputer extends SlaveComputer {
 	public PBSSlave getNode() {
 		return (PBSSlave)super.getNode();
 	}
+	
+	public List<Queue> getQueues() throws IOException, InterruptedException {
+		List<Queue> queues = getChannel().call(new GetPBSQueues());
+		return queues;
+	}
+	
+	public List<Job> getJobs(Queue queue) throws IOException, InterruptedException {
+		List<Job> jobs = getChannel().call(new GetPBSJobs(queue));
+		return jobs;
+	}
+	
+	private static final class GetPBSQueues implements Callable<List<Queue>,RuntimeException> {
+        public List<Queue> call() {
+            return PBS.qstatQueues();
+        }
+    }
+	
+	private static final class GetPBSJobs implements Callable<List<Job>,RuntimeException> {
+		private final Queue queue;
+		public GetPBSJobs(Queue queue) {
+			this.queue = queue;
+		}
+        public List<Job> call() {
+            return PBS.qstatJobs(queue.getName());
+        }
+    }
 
 }
