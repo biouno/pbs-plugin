@@ -41,7 +41,7 @@ import com.tupilabs.pbs.model.Queue;
  */
 public class PBSSlaveComputer extends SlaveComputer {
 	
-	private static final Logger LOGGER = Logger.getLogger(PBSSlaveComputer.class.getName());
+	protected static final Logger LOGGER = Logger.getLogger(PBSSlaveComputer.class.getName());
 
 	/**
 	 * @param slave
@@ -69,18 +69,21 @@ public class PBSSlaveComputer extends SlaveComputer {
 	}
 	
 	private static final class GetPBSQueues implements Callable<List<Queue>,RuntimeException> {
-        public List<Queue> call() {
+		private static final long serialVersionUID = -9174853723996041340L;
+
+		public List<Queue> call() {
             return PBS.qstatQueues();
         }
     }
 	
 	private static final class GetPBSJobs implements Callable<List<Job>,RuntimeException> {
+		private static final long serialVersionUID = -8224467401457563865L;
 		private final Queue queue;
 		public GetPBSJobs(Queue queue) {
 			this.queue = queue;
 		}
         public List<Job> call() {
-            return PBS.qstatJobs(queue.getName());
+            return PBS.qstat(queue.getName());
         }
     }
 

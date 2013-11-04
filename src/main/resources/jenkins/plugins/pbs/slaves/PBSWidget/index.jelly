@@ -5,7 +5,7 @@
         <tbody>
             <tr>
                 <th class='pane' colspan='3'>
-                    ${computer.name}
+                    Jenkins slave: ${computer.name}
                 </th>
             </tr>
         </tbody>
@@ -15,7 +15,7 @@
             <col width="24"></col>
         </colgroup>
         <tbody>
-            <j:forEach var="queue" items="${computer.getQueues()}">
+            <j:forEach var="queue" items="${computer.queues}">
             <tr>
                 <th class='pane' colspan='3'>Queue: ${queue.name}</th>
             </tr>
@@ -23,7 +23,7 @@
             <tr>
                 <td class='pane'>${job.id}</td>
                 <td class='pane'>${job.name}</td>
-                <td class='pane'>TBD: </td>
+                <td class='pane'></td>
             </tr>
                 </j:forEach>
             </j:forEach>

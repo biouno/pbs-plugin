@@ -23,12 +23,24 @@
  */
 package jenkins.plugins.pbs.slaves;
 
+import hudson.AbortException;
+import hudson.Extension;
+import hudson.Launcher;
+import hudson.model.BuildListener;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.remoting.Callable;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
+
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 
-import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
-import hudson.tasks.Builder;
+import org.kohsuke.stapler.DataBoundConstructor;
+
+import com.tupilabs.pbs.PBS;
+import com.tupilabs.pbs.util.PBSException;
 
 /**
  * 
@@ -37,14 +49,93 @@ import hudson.tasks.Builder;
  */
 public class PBSBuilder extends Builder {
 
+	@Extension
+	public static final PBSBuilderDescriptor descriptor = new PBSBuilderDescriptor();
+	
+	/**
+	 * PBS script.
+	 */
+	private final String script;
+	
+	@DataBoundConstructor
+	public PBSBuilder(String script) {
+		super();
+		this.script = script;
+	}
+	
+	public String getScript() {
+		return script;
+	}
+	
 	/* (non-Javadoc)
 	 * @see hudson.tasks.BuildStepCompatibilityLayer#perform(hudson.model.AbstractBuild, hudson.Launcher, hudson.model.BuildListener)
 	 */
 	@Override
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
-			BuildListener listener) throws InterruptedException, IOException {
+			final BuildListener listener) throws InterruptedException, IOException {
 		// TODO: qsub a script
-		return super.perform(build, launcher, listener);
+		listener.getLogger().println("Submitting PBS job...");
+		
+		SubmitPbsJob submit = new SubmitPbsJob(getScript(), listener);
+		try {
+			launcher.getChannel().call(submit);
+		} catch (PBSException e) {
+			listener.fatalError(e.getMessage(), e);
+			throw new AbortException(e.getMessage());
+		}
+		return true;
+	}
+	
+	protected static final class SubmitPbsJob implements Callable<Void, PBSException> {
+
+		private static final long serialVersionUID = -8294426519319612072L;
+		
+		private final String script;
+		private final BuildListener listener;
+
+		public SubmitPbsJob(String script, BuildListener listener) {
+			this.script = script;
+			this.listener = listener;
+		}
+		
+		public Void call() {
+			FileWriter writer = null;
+			try {
+				File tmpScript = File.createTempFile("pbs", "script");
+				writer = new FileWriter(tmpScript);
+				writer.write(script);
+				writer.flush();
+				writer.close();
+				listener.getLogger().println("PBS script: " + tmpScript.getAbsolutePath());
+				PBS.qsub(tmpScript.getAbsolutePath());
+			} catch (IOException e) {
+				throw new PBSException("Failed to create temp script");
+			} finally {
+				try {
+					if (writer != null)
+						writer.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			return null;
+		}
+		
+	}
+	
+	public static final class PBSBuilderDescriptor extends BuildStepDescriptor<Builder> {
+
+		@SuppressWarnings("rawtypes") // Jenkins API
+		@Override
+		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+			return true;
+		}
+
+		@Override
+		public String getDisplayName() {
+			return "Submit PBS job";
+		}
+		
 	}
 	
 }
