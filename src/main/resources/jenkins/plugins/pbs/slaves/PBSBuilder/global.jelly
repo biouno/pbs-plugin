@@ -2,7 +2,11 @@
   
     <f:section title="PBS settings">
         <f:entry title="${%Number of days to lookup jobs}" help="">
-            <f:textarea name="PBSBuilder.numberOfDays" value="${inst.numberOfDays}" />
+            <f:textbox name="PBSBuilder.numberOfDays" value="${instance.numberOfDays}" />
+        </f:entry>
+        
+        <f:entry title="${%Span time before checking if job is running in ms}" help="">
+            <f:textbox name="PBSBuilder.span" value="${instance.span}" />
         </f:entry>
     </f:section>        
         
