@@ -24,9 +24,11 @@
 package jenkins.plugins.pbs.slaves;
 
 import hudson.remoting.Callable;
+import hudson.remoting.Channel;
 import hudson.slaves.SlaveComputer;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -59,7 +61,10 @@ public class PBSSlaveComputer extends SlaveComputer {
 	}
 	
 	public List<Queue> getQueues() throws IOException, InterruptedException {
-		List<Queue> queues = getChannel().call(new GetPBSQueues());
+		Channel channel = getChannel();
+		if (channel == null)
+			return Collections.emptyList();
+		List<Queue> queues = channel.call(new GetPBSQueues());
 		return queues;
 	}
 	

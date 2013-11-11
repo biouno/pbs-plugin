@@ -29,6 +29,7 @@ import hudson.Launcher;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Computer;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 
@@ -72,8 +73,11 @@ public class PBSBuilder extends Builder {
 	@Override
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
 			final BuildListener listener) throws InterruptedException, IOException {
-		// TODO: qsub a script
 		listener.getLogger().println("Submitting PBS job...");
+		
+		if (!(Computer.currentComputer() instanceof PBSSlaveComputer)) {
+			throw new AbortException("You need  PBS Slave Computer in order to submit PBS jobs");
+		}
 		
 		int numberOfDays = ((PBSBuilderDescriptor)this.getDescriptor()).getNumberOfDays();
 		long span = ((PBSBuilderDescriptor)this.getDescriptor()).getSpan();
