@@ -5,7 +5,7 @@
         <tbody>
             <tr>
                 <th class='pane' colspan='3'>
-                    Jenkins slave: ${computer.name}
+                    Jenkins slave: <a href="${rootURL}/computer/${computer.name}">${computer.name}</a>
                 </th>
             </tr>
         </tbody>
@@ -21,7 +21,7 @@
             </tr>
                 <j:forEach var="job" items="${computer.getJobs(queue)}">
             <tr>
-                <td class='pane'>${job.id}</td>
+                <td class='pane'><a href="${rootURL}/pbsJob/index?jobId=${job.id}">${job.id}</a></td>
                 <td class='pane'>${job.name}</td>
                 <td class='pane'></td>
             </tr>
@@ -30,4 +30,9 @@
         </tbody>
     </j:forEach>
   </l:pane>
+  <form method='get' action='${rootURL}/pbsJob/index'>
+        <label for='jobId'>PBS Job ID</label><input type='text' name='jobId' id='jobId' />
+        <label for='numberOfDays'>Number of days</label><input type='text' name='numberOfDays' id='numberOfDays' value='1' />
+        <input type='submit' value='Search' />
+    </form>
 </j:jelly>

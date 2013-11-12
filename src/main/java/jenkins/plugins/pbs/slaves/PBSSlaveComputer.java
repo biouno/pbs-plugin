@@ -88,7 +88,11 @@ public class PBSSlaveComputer extends SlaveComputer {
 			this.queue = queue;
 		}
         public List<Job> call() {
-            return PBS.qstat(queue.getName());
+            List<Job> jobs = PBS.qstat(queue.getName());
+            for(Job job : jobs) {
+            	job.setId(job.getId().trim());
+            }
+            return jobs;
         }
     }
 

@@ -1,0 +1,22 @@
+<j:jelly 
+    xmlns:j="jelly:core" 
+    xmlns:st="jelly:stapler"
+        xmlns:d="jelly:define" 
+        xmlns:l="/lib/layout" 
+        xmlns:t="/lib/hudson"
+        xmlns:f="/lib/form" 
+        xmlns:i="jelly:fmt">
+    <l:layout norefresh="true">
+        <st:include it="${it.owner}" page="sidepanel.jelly" />
+        <l:main-panel>
+            <h1>Job Output</h1>
+            <p>
+                <pre>${request.getAttribute('output')}</pre>
+            </p>
+            <h1>Job Error</h1>
+            <p>
+                <pre>${request.getAttribute('error')}</pre>
+            </p>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

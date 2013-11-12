@@ -2,7 +2,15 @@ package jenkins.plugins.pbs.slaves;
 
 import hudson.Extension;
 import hudson.model.RootAction;
+import hudson.model.View;
 
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+
+import jenkins.model.Jenkins;
+
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -12,10 +20,14 @@ import com.tupilabs.pbs.util.CommandOutput;
 @Extension
 public class DisplayPBSJobAction implements RootAction {
 
-	private final int numberOfDays;
+	private int numberOfDays;
 
-	public DisplayPBSJobAction(int numberOfDays) {
-		this.numberOfDays = numberOfDays;
+	public DisplayPBSJobAction() {
+		this.numberOfDays = 1;
+	}
+	
+	public int getNumberOfDays() {
+		return numberOfDays;
 	}
 	
 	public String getIconFileName() {
@@ -30,17 +42,23 @@ public class DisplayPBSJobAction implements RootAction {
 		return "/pbsJob";
 	}
 	
-	public Object doDynamic(StaplerRequest request, StaplerResponse response) {
+	public View getOwner() {
+		return Jenkins.getInstance().getPrimaryView();
+	}
+	
+	public void doIndex(StaplerRequest request, StaplerResponse response) throws ServletException, IOException {
 		// TODO: get logger
-		String restOfPath = request.getRestOfPath();
-		if (restOfPath != null && restOfPath.length() > 1) {
-			if (restOfPath.startsWith("/"))
-				restOfPath = restOfPath.substring(1, restOfPath.length());
-			final String jobId = restOfPath;
-			CommandOutput commandOutput = PBS.traceJob(jobId, numberOfDays);
-			return new PBSJob(commandOutput.getOutput(), commandOutput.getError());
+		String jobId = request.getParameter("jobId");
+		if (StringUtils.isNotBlank(jobId)) {
+			String numberOfDays = request.getParameter("numberOfDays");
+			if (StringUtils.isNotBlank(numberOfDays))
+				this.numberOfDays = Integer.parseInt(numberOfDays);
+			CommandOutput commandOutput = PBS.traceJob(jobId, this.numberOfDays);
+			request.setAttribute("output", commandOutput.getOutput());
+			request.setAttribute("error", commandOutput.getError());
+			request.getView(this, "index.jelly").forward(request, response);
+			//return new PBSJob(jobId, commandOutput.getOutput(), commandOutput.getError());
 		}
-		return null; // TODO: redirect to job page?
 	}
 	
 }

@@ -38,6 +38,9 @@ import jenkins.model.Jenkins;
  */
 public class PBSWidget extends Widget {
 
+	public PBSWidget() {
+	}
+	
 	public String getDescription() {
 		return "PBS Widget";
 	}
