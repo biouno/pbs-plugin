@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) <2012> <Bruno P. Kinoshita>
+ * Copyright (c) <2012-2013> <Bruno P. Kinoshita>
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,31 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package jenkins.plugins.pbs.slaves;
+package jenkins.plugins.pbs;
 
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.Computer;
+import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 
 import java.io.IOException;
 
+import jenkins.plugins.pbs.slaves.PBSSlaveComputer;
+import jenkins.plugins.pbs.tasks.Qsub;
+import net.sf.json.JSONObject;
+
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
 
 import com.tupilabs.pbs.util.PBSException;
 
 /**
- * 
- * @author Bruno P. Kinoshita - http://www.kinoshita.eti.br
+ * PBS build step.
  * @since 0.1
  */
 public class PBSBuilder extends Builder {
 
 	@Extension
-	public static final PBSBuilderDescriptor descriptor = new PBSBuilderDescriptor();
+	public static final PBSBuilderDescriptor DESCRIPTOR = new PBSBuilderDescriptor();
 	
 	/**
 	 * PBS script.
@@ -77,7 +83,7 @@ public class PBSBuilder extends Builder {
 		int numberOfDays = ((PBSBuilderDescriptor)this.getDescriptor()).getNumberOfDays();
 		long span = ((PBSBuilderDescriptor)this.getDescriptor()).getSpan();
 		
-		SubmitPbsJob submit = new SubmitPbsJob(getScript(), numberOfDays, span, listener);
+		Qsub submit = new Qsub(getScript(), numberOfDays, span, listener);
 		try {
 			launcher.getChannel().call(submit);
 		} catch (PBSException e) {
@@ -85,6 +91,50 @@ public class PBSBuilder extends Builder {
 			throw new AbortException(e.getMessage());
 		}
 		return true;
+	}
+	
+	public static class PBSBuilderDescriptor extends BuildStepDescriptor<Builder> {
+
+		private Integer numberOfDays;
+		private Long span;
+
+		public PBSBuilderDescriptor() {
+			super();
+			load();
+		}
+
+		@Override
+		public boolean configure(StaplerRequest req, JSONObject json)
+				throws hudson.model.Descriptor.FormException {
+			this.numberOfDays = json.getInt("numberOfDays");
+			this.span = json.getLong("span");
+			return true;
+		}
+
+		@SuppressWarnings("rawtypes")
+		// Jenkins API
+		@Override
+		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+			return true;
+		}
+
+		@Override
+		public String getDisplayName() {
+			return "Submit PBS job";
+		}
+
+		public Integer getNumberOfDays() {
+			if (this.numberOfDays == null || this.numberOfDays < 0)
+				return new Integer(1);
+			return this.numberOfDays;
+		}
+
+		public Long getSpan() {
+			if (this.span == null || this.span < 0)
+				return new Long(300);
+			return this.span;
+		}
+
 	}
 	
 }

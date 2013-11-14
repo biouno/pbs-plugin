@@ -1,4 +1,27 @@
-package jenkins.plugins.pbs.slaves;
+/*
+ * The MIT License
+ *
+ * Copyright (c) <2012-2013> <Bruno P. Kinoshita>
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package jenkins.plugins.pbs;
 
 import hudson.Extension;
 import hudson.model.RootAction;
@@ -9,6 +32,7 @@ import java.io.IOException;
 import javax.servlet.ServletException;
 
 import jenkins.model.Jenkins;
+import jenkins.plugins.pbs.slaves.PBSSlaveComputer;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.StaplerRequest;
@@ -17,6 +41,11 @@ import org.kohsuke.stapler.StaplerResponse;
 import com.tupilabs.pbs.PBS;
 import com.tupilabs.pbs.util.CommandOutput;
 
+/**
+ * Action used to display information on a PBS Job submitted to a
+ * {@link PBSSlaveComputer}.
+ * @since 0.1
+ */
 @Extension
 public class DisplayPBSJobAction implements RootAction {
 

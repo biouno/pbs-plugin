@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) <2012> <Bruno P. Kinoshita>
+ * Copyright (c) <2012-2013> <Bruno P. Kinoshita>
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,24 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package jenkins.plugins.pbs.slaves;
-
-import jenkins.model.Jenkins;
-import hudson.Plugin;
 
 /**
- * 
- * @author Bruno P. Kinoshita - http://www.kinoshita.eti.br
+ * Contains callables used to interact with the PBS server remotely.
  * @since 0.1
  */
-public class PBSPlugin extends Plugin {
-
-	/* (non-Javadoc)
-	 * @see hudson.Plugin#start()
-	 */
-	@Override
-	public void start() throws Exception {
-		Jenkins.getInstance().getWidgets().add(new PBSWidget());
-	}
-	
-}
+package jenkins.plugins.pbs.tasks;

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) <2012> <Bruno P. Kinoshita>
+ * Copyright (c) <2012-2013> <Bruno P. Kinoshita>
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package jenkins.plugins.pbs.slaves;
+package jenkins.plugins.pbs;
 
 import hudson.model.Computer;
 import hudson.widgets.Widget;
@@ -30,17 +30,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 import jenkins.model.Jenkins;
+import jenkins.plugins.pbs.slaves.PBSSlaveComputer;
 
 /**
- * 
- * @author Bruno P. Kinoshita - http://www.kinoshita.eti.br
+ * PBS Widget. Displayed in the left sidebar, below the Build Queue.
  * @since 0.1
  */
 public class PBSWidget extends Widget {
 
-	public PBSWidget() {
-	}
-	
 	public String getDescription() {
 		return "PBS Widget";
 	}

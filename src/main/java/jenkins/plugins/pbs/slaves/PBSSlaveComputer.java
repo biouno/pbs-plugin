@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) <2012> <Bruno P. Kinoshita>
+ * Copyright (c) <2012-2013> <Bruno P. Kinoshita>
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,8 +37,7 @@ import com.tupilabs.pbs.model.Job;
 import com.tupilabs.pbs.model.Queue;
 
 /**
- * 
- * @author Bruno P. Kinoshita - http://www.kinoshita.eti.br
+ * PBS slave computer.
  * @since 0.1
  */
 public class PBSSlaveComputer extends SlaveComputer {
