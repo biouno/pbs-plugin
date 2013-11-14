@@ -85,14 +85,17 @@ public class PBSBuilder extends Builder {
 		
 		Qsub submit = new Qsub(getScript(), numberOfDays, span, listener);
 		try {
-			launcher.getChannel().call(submit);
+			return launcher.getChannel().call(submit);
 		} catch (PBSException e) {
 			listener.fatalError(e.getMessage(), e);
 			throw new AbortException(e.getMessage());
 		}
-		return true;
 	}
 	
+	/**
+	 * PBSBuilder descriptor.
+	 * @since 0.1
+	 */
 	public static class PBSBuilderDescriptor extends BuildStepDescriptor<Builder> {
 
 		private Integer numberOfDays;

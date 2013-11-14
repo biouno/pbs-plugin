@@ -24,7 +24,6 @@
 package jenkins.plugins.pbs.tasks;
 
 import hudson.model.BuildListener;
-import hudson.model.Result;
 import hudson.remoting.Callable;
 
 import java.io.File;
@@ -43,7 +42,7 @@ import com.tupilabs.pbs.util.PBSException;
  * qsub command.
  * @since 0.1
  */
-public class Qsub implements Callable<Result, PBSException> {
+public class Qsub implements Callable<Boolean, PBSException> {
 
 	private static final long serialVersionUID = -8294426519319612072L;
 	
@@ -55,6 +54,13 @@ public class Qsub implements Callable<Result, PBSException> {
 	private final long span;
 	private final BuildListener listener;
 
+	/**
+	 * Create a new qsub command.
+	 * @param script
+	 * @param numberOfDays
+	 * @param span
+	 * @param listener
+	 */
 	public Qsub(String script, int numberOfDays, long span, BuildListener listener) {
 		this.script = script;
 		this.numberOfDays = numberOfDays;
@@ -62,7 +68,7 @@ public class Qsub implements Callable<Result, PBSException> {
 		this.listener = listener;
 	}
 	
-	public Result call() {
+	public Boolean call() {
 		FileWriter writer = null;
 		try {
 			File tmpScript = File.createTempFile("pbs", "script");
@@ -75,8 +81,7 @@ public class Qsub implements Callable<Result, PBSException> {
 			
 			listener.getLogger().println("PBS Job submitted: " + jobId);
 			
-			Result result = this.seekEnd(jobId, numberOfDays, span);
-			return result;
+			return this.seekEnd(jobId, numberOfDays, span);
 		} catch (IOException e) {
 			throw new PBSException("Failed to create temp script");
 		} finally {
@@ -90,7 +95,7 @@ public class Qsub implements Callable<Result, PBSException> {
 	}
 
 	// adapted from https://github.com/jenkinsci/call-remote-job-plugin/blob/master/src/main/java/org/ukiuni/callOtherJenkins/CallOtherJenkins/JenkinsRemoteIF.java
-	private Result seekEnd(String jobId, int numberOfDays, long span) {
+	private boolean seekEnd(String jobId, int numberOfDays, long span) {
 		CommandOutput cmd = PBS.traceJob(jobId, numberOfDays);
 		
 		String out = cmd.getOutput();
@@ -99,19 +104,19 @@ public class Qsub implements Callable<Result, PBSException> {
 		if (StringUtils.isBlank(out)) {
 			listener.getLogger().println("Could not find job " + jobId + " in PBS logs...Marking build as UNSTABLE");
 			listener.getLogger().println(err);
-			return Result.UNSTABLE;
+			return false;
 		}
 		
 		listener.getLogger().println("Seeking job end...");
 		return this.loopSeek(jobId);
 	}
 	
-	private Result loopSeek(String jobId) {
+	private boolean loopSeek(String jobId) {
 		while (true) {
 			CommandOutput cmd = PBS.traceJob(jobId, numberOfDays);
 			
 			String out = cmd.getOutput();
-			String err = cmd.getError();
+			//String err = cmd.getError();
 			
 //			listener.getLogger().println(out);
 //			listener.getLogger().println("----");
@@ -120,8 +125,8 @@ public class Qsub implements Callable<Result, PBSException> {
 				String state = matcher.group(1);
 				listener.getLogger().println("Found job state " + state);
 				if ("COMPLETE".equals(state))
-					return Result.SUCCESS;
-				return Result.UNSTABLE;
+					return true;
+				return false;
 			}
 			try {
 				//listener.getLogger().println("Sleeping for " + span + "ms");

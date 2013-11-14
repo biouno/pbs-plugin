@@ -21,45 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package jenkins.plugins.pbs.model;
+package jenkins.plugins.pbs.tasks;
 
-import java.io.Serializable;
+import hudson.remoting.Callable;
+import jenkins.plugins.pbs.model.PBSJob;
 
-import hudson.model.ModelObject;
+import com.tupilabs.pbs.PBS;
+import com.tupilabs.pbs.util.CommandOutput;
 
 /**
- * Represents a PBS Job submitted to the server. Used to
- * get the output and error of the job.
+ * tracejob command.
  * @since 0.1
  */
-public class PBSJob implements ModelObject, Serializable {
+public class TraceJob implements Callable<PBSJob, Throwable>{
 
-	private static final long serialVersionUID = -7088755514985506044L;
+	private static final long serialVersionUID = -3021968398281203773L;
+	
 	private final String jobId;
-	private final String out;
-	private final String err;
+	private final int numberOfDays;
 
-	public PBSJob(String jobId, String out, String err) {
-		super();
+	public TraceJob(String jobId, int numberOfDays) {
 		this.jobId = jobId;
-		this.out = out;
-		this.err = err;
+		this.numberOfDays = numberOfDays;
 	}
 	
 	public String getJobId() {
 		return jobId;
 	}
-
-	public String getOut() {
-		return out;
+	
+	public int getNumberOfDays() {
+		return numberOfDays;
 	}
-
-	public String getErr() {
-		return err;
-	}
-
-	public String getDisplayName() {
-		return "PBS Job " + jobId;
+	
+	public PBSJob call() throws Throwable {
+		final CommandOutput commandOutput = PBS.traceJob(jobId, this.numberOfDays);
+		return new PBSJob(jobId, commandOutput.getOutput(), commandOutput.getError());
 	}
 
 }

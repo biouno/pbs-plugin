@@ -25,6 +25,7 @@ package jenkins.plugins.pbs;
 
 import hudson.Extension;
 import hudson.model.RootAction;
+import hudson.model.Computer;
 import hudson.model.View;
 
 import java.io.IOException;
@@ -32,14 +33,14 @@ import java.io.IOException;
 import javax.servlet.ServletException;
 
 import jenkins.model.Jenkins;
+import jenkins.plugins.pbs.PBSBuilder.PBSBuilderDescriptor;
+import jenkins.plugins.pbs.model.PBSJob;
 import jenkins.plugins.pbs.slaves.PBSSlaveComputer;
+import jenkins.plugins.pbs.tasks.TraceJob;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
-
-import com.tupilabs.pbs.PBS;
-import com.tupilabs.pbs.util.CommandOutput;
 
 /**
  * Action used to display information on a PBS Job submitted to a
@@ -49,16 +50,6 @@ import com.tupilabs.pbs.util.CommandOutput;
 @Extension
 public class DisplayPBSJobAction implements RootAction {
 
-	private int numberOfDays;
-
-	public DisplayPBSJobAction() {
-		this.numberOfDays = 1;
-	}
-	
-	public int getNumberOfDays() {
-		return numberOfDays;
-	}
-	
 	public String getIconFileName() {
 		return null;
 	}
@@ -76,17 +67,36 @@ public class DisplayPBSJobAction implements RootAction {
 	}
 	
 	public void doIndex(StaplerRequest request, StaplerResponse response) throws ServletException, IOException {
-		// TODO: get logger
 		String jobId = request.getParameter("jobId");
-		if (StringUtils.isNotBlank(jobId)) {
-			String numberOfDays = request.getParameter("numberOfDays");
-			if (StringUtils.isNotBlank(numberOfDays))
-				this.numberOfDays = Integer.parseInt(numberOfDays);
-			CommandOutput commandOutput = PBS.traceJob(jobId, this.numberOfDays);
-			request.setAttribute("output", commandOutput.getOutput());
-			request.setAttribute("error", commandOutput.getError());
+		String sNumberOfDays = request.getParameter("numberOfDays");
+		int numberOfDays = 1;
+		if (StringUtils.isNotBlank(sNumberOfDays)) {
+			numberOfDays = Integer.parseInt(sNumberOfDays);
+		} else {
+			PBSBuilderDescriptor descriptor = (PBSBuilderDescriptor) Jenkins.getInstance().getDescriptor(PBSBuilder.class);
+			numberOfDays = descriptor.getNumberOfDays();
+		}
+		String slaveName = request.getParameter("slaveName");
+		
+		Computer computer = Jenkins.getInstance().getComputer(slaveName);
+		if (!(computer instanceof PBSSlaveComputer)) {
+			throw new RuntimeException(String.format("%s is not a PBS Slave!", computer.getName()));
+		}
+		PBSSlaveComputer pbsSlaveComputer = (PBSSlaveComputer) computer;
+		
+		TraceJob traceJob = new TraceJob(jobId, numberOfDays);
+		
+		PBSJob pbsJob = null;
+		try {
+			pbsJob = pbsSlaveComputer.getChannel().call(traceJob);
+			
+			request.setAttribute("output", pbsJob.getOut());
+			request.setAttribute("error", pbsJob.getErr());
 			request.getView(this, "index.jelly").forward(request, response);
-			//return new PBSJob(jobId, commandOutput.getOutput(), commandOutput.getError());
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (Throwable e) {
+			e.printStackTrace();
 		}
 	}
 	
