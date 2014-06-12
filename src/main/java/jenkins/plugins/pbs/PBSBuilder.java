@@ -82,8 +82,12 @@ public class PBSBuilder extends Builder {
 		
 		int numberOfDays = ((PBSBuilderDescriptor)this.getDescriptor()).getNumberOfDays();
 		long span = ((PBSBuilderDescriptor)this.getDescriptor()).getSpan();
-		
-		Qsub submit = new Qsub(getScript(), numberOfDays, span, listener);
+                String runUser = ((PBSBuilderDescriptor)this.getDescriptor()).getRunUser();
+                String logHostname = ((PBSBuilderDescriptor)this.getDescriptor()).getLogHostname();
+                String logBasename = ((PBSBuilderDescriptor)this.getDescriptor()).getLogBasename();
+                
+		Qsub submit = new Qsub(getScript(), numberOfDays, span, runUser, logHostname, logBasename, build.getEnvironment(listener),
+                                       listener);
 		try {
 			return launcher.getChannel().call(submit);
 		} catch (PBSException e) {
@@ -100,6 +104,9 @@ public class PBSBuilder extends Builder {
 
 		private Integer numberOfDays;
 		private Long span;
+                private String runUser;
+                private String logHostname;
+                private String logBasename;
 
 		public PBSBuilderDescriptor() {
 			super();
@@ -111,6 +118,10 @@ public class PBSBuilder extends Builder {
 				throws hudson.model.Descriptor.FormException {
 			this.numberOfDays = json.getInt("numberOfDays");
 			this.span = json.getLong("span");
+                        this.runUser = json.getString("runUser");
+                        this.logHostname = json.getString("logHostname");
+                        this.logBasename = json.getString("logBasename");
+                        save();
 			return true;
 		}
 
@@ -137,7 +148,24 @@ public class PBSBuilder extends Builder {
 				return new Long(300);
 			return this.span;
 		}
-
+                
+                public String getRunUser() {
+			if (this.runUser == null)
+				return new String("");
+			return this.runUser;
+		}
+                
+                public String getLogHostname() {
+			if (this.logHostname == null)
+				return new String("");
+			return this.logHostname;
+		}
+                
+                public String getLogBasename() {
+			if (this.logBasename == null)
+				return new String("");
+			return this.logBasename;
+		}
 	}
 	
 }
