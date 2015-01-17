@@ -50,122 +50,122 @@ import com.tupilabs.pbs.util.PBSException;
  */
 public class PBSBuilder extends Builder {
 
-	@Extension
-	public static final PBSBuilderDescriptor DESCRIPTOR = new PBSBuilderDescriptor();
-	
-	/**
-	 * PBS script.
-	 */
-	private final String script;
-	
-	@DataBoundConstructor
-	public PBSBuilder(String script) {
-		super();
-		this.script = script;
-	}
-	
-	public String getScript() {
-		return script;
-	}
-	
-	/* (non-Javadoc)
-	 * @see hudson.tasks.BuildStepCompatibilityLayer#perform(hudson.model.AbstractBuild, hudson.Launcher, hudson.model.BuildListener)
-	 */
-	@Override
-	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
-			final BuildListener listener) throws InterruptedException, IOException {
-		listener.getLogger().println("Submitting PBS job...");
-		
-		if (!(Computer.currentComputer() instanceof PBSSlaveComputer)) {
-			throw new AbortException("You need  PBS Slave Computer in order to submit PBS jobs");
-		}
-		
-		int numberOfDays = ((PBSBuilderDescriptor)this.getDescriptor()).getNumberOfDays();
-		long span = ((PBSBuilderDescriptor)this.getDescriptor()).getSpan();
-                String runUser = ((PBSBuilderDescriptor)this.getDescriptor()).getRunUser();
-                String logHostname = ((PBSBuilderDescriptor)this.getDescriptor()).getLogHostname();
-                String logBasename = ((PBSBuilderDescriptor)this.getDescriptor()).getLogBasename();
-                
-		Qsub submit = new Qsub(getScript(), numberOfDays, span, runUser, logHostname, logBasename, build.getEnvironment(listener),
-                                       listener);
-		try {
-			return launcher.getChannel().call(submit);
-		} catch (PBSException e) {
-			listener.fatalError(e.getMessage(), e);
-			throw new AbortException(e.getMessage());
-		}
-	}
-	
-	/**
-	 * PBSBuilder descriptor.
-	 * @since 0.1
-	 */
-	public static class PBSBuilderDescriptor extends BuildStepDescriptor<Builder> {
+    @Extension
+    public static final PBSBuilderDescriptor DESCRIPTOR = new PBSBuilderDescriptor();
+
+    /**
+     * PBS script.
+     */
+    private final String script;
+
+    @DataBoundConstructor
+    public PBSBuilder(String script) {
+        super();
+        this.script = script;
+    }
+
+    public String getScript() {
+        return script;
+    }
+
+    /* (non-Javadoc)
+     * @see hudson.tasks.BuildStepCompatibilityLayer#perform(hudson.model.AbstractBuild, hudson.Launcher, hudson.model.BuildListener)
+     */
+    @Override
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
+            final BuildListener listener) throws InterruptedException, IOException {
+        listener.getLogger().println("Submitting PBS job...");
+        
+        if (!(Computer.currentComputer() instanceof PBSSlaveComputer)) {
+            throw new AbortException("You need  PBS Slave Computer in order to submit PBS jobs");
+        }
+        
+        final PBSBuilderDescriptor descriptor = (PBSBuilderDescriptor) getDescriptor();
+        
+        final int numberOfDays = descriptor.getNumberOfDays();
+        final long span = descriptor.getSpan();
+        final String runUser = descriptor.getRunUser();
+        final String logHostname = descriptor.getLogHostname();
+        final String logBasename = descriptor.getLogBasename();
+
+        final Qsub submit = new Qsub(getScript(), numberOfDays, span, runUser, logHostname,
+        		logBasename, build.getEnvironment(listener), listener);
+        try {
+            return launcher.getChannel().call(submit);
+        } catch (PBSException e) {
+            listener.fatalError(e.getMessage(), e);
+            throw new AbortException(e.getMessage());
+        }
+    }
+
+    /**
+     * PBSBuilder descriptor.
+     * @since 0.1
+     */
+    public static class PBSBuilderDescriptor extends BuildStepDescriptor<Builder> {
+
+        private static final Long DEFAULT_SPAN_TIME_MS = 300L;
 
 		private Integer numberOfDays;
-		private Long span;
-                private String runUser;
-                private String logHostname;
-                private String logBasename;
+        private Long span;
+        private String runUser;
+        private String logHostname;
+        private String logBasename;
 
-		public PBSBuilderDescriptor() {
-			super();
-			load();
-		}
+        public PBSBuilderDescriptor() {
+            super();
+            load();
+        }
 
-		@Override
-		public boolean configure(StaplerRequest req, JSONObject json)
-				throws hudson.model.Descriptor.FormException {
-			this.numberOfDays = json.getInt("numberOfDays");
-			this.span = json.getLong("span");
-                        this.runUser = json.getString("runUser");
-                        this.logHostname = json.getString("logHostname");
-                        this.logBasename = json.getString("logBasename");
-                        save();
-			return true;
-		}
+        @Override
+        public boolean configure(StaplerRequest req, JSONObject json)
+                throws hudson.model.Descriptor.FormException {
+            numberOfDays = json.getInt("numberOfDays");
+            if (numberOfDays == null || numberOfDays < 0) {
+            	numberOfDays = Integer.valueOf(1);
+            }
+            span = json.getLong("span");
+            if (span == null || this.span < 0) {
+                span = DEFAULT_SPAN_TIME_MS;
+            }
+            runUser = json.optString("runUser", "");
+            logHostname = json.optString("logHostname", "");
+            logBasename = json.optString("logBasename", "");
+            save();
+            return Boolean.TRUE;
+        }
 
-		@SuppressWarnings("rawtypes")
-		// Jenkins API
-		@Override
-		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-			return true;
-		}
+        @SuppressWarnings("rawtypes")
+        // Jenkins API
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+            return Boolean.TRUE;
+        }
 
-		@Override
-		public String getDisplayName() {
-			return "Submit PBS job";
-		}
+        @Override
+        public String getDisplayName() {
+            return "Submit PBS job";
+        }
 
-		public Integer getNumberOfDays() {
-			if (this.numberOfDays == null || this.numberOfDays < 0)
-				return new Integer(1);
-			return this.numberOfDays;
-		}
+        public Integer getNumberOfDays() {
+            return this.numberOfDays;
+        }
 
-		public Long getSpan() {
-			if (this.span == null || this.span < 0)
-				return new Long(300);
-			return this.span;
-		}
+        public Long getSpan() {
+            return this.span;
+        }
                 
-                public String getRunUser() {
-			if (this.runUser == null)
-				return new String("");
-			return this.runUser;
-		}
+        public String getRunUser() {
+            return runUser;
+        }
                 
-                public String getLogHostname() {
-			if (this.logHostname == null)
-				return new String("");
-			return this.logHostname;
-		}
+        public String getLogHostname() {
+            return logHostname;
+        }
                 
-                public String getLogBasename() {
-			if (this.logBasename == null)
-				return new String("");
-			return this.logBasename;
-		}
-	}
-	
+        public String getLogBasename() {
+        	return logBasename;
+        }
+    }
+
 }
