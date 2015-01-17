@@ -26,15 +26,21 @@ package jenkins.plugins.pbs.tasks;
 import hudson.model.BuildListener;
 import hudson.remoting.Callable;
 
-import java.io.File;
-import java.io.FileWriter;
+import java.io.InputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 
 import com.tupilabs.pbs.PBS;
+import com.tupilabs.pbs.model.Job;
 import com.tupilabs.pbs.util.CommandOutput;
 import com.tupilabs.pbs.util.PBSException;
 
@@ -46,13 +52,20 @@ public class Qsub implements Callable<Boolean, PBSException> {
 
 	private static final long serialVersionUID = -8294426519319612072L;
 	
-	private static final String REGEX_JOB_STATUS = "dequeuing .*, state (.*)$";
+	private static final String REGEX_JOB_STATUS = "JOB_SUBSTATE_(.*)$";
+        private static final String REGEX_JOB_SUBSTATUS = "Exit_status=([0-9]+)";
+        private static final Pattern JOB_SUBSTATUS_REGEX = Pattern.compile(REGEX_JOB_SUBSTATUS, Pattern.MULTILINE);
 	private static final Pattern JOB_STATUS_REGEX = Pattern.compile(REGEX_JOB_STATUS, Pattern.MULTILINE);
 	
 	private final String script;
 	private final int numberOfDays;
 	private final long span;
+        private final String runUser;
 	private final BuildListener listener;
+        private final Map<String, String> environment;
+        private final String executionDirectory;
+        private final String errFileName;
+        private final String outFileName;
 
 	/**
 	 * Create a new qsub command.
@@ -61,23 +74,59 @@ public class Qsub implements Callable<Boolean, PBSException> {
 	 * @param span
 	 * @param listener
 	 */
-	public Qsub(String script, int numberOfDays, long span, BuildListener listener) {
+	public Qsub(String script, int numberOfDays, long span, String runUser, String logHostname,
+                    String logBasename, Map<String, String> environment, BuildListener listener) {
 		this.script = script;
 		this.numberOfDays = numberOfDays;
 		this.span = span;
-		this.listener = listener;
+                this.runUser = runUser;
+                this.listener = listener;
+                this.environment = environment;
+                
+                String myLogBasename = (logBasename.length() > 0)?logBasename:"/tmp/";
+                
+                try {
+                        // If we are running as another user, we are going to make sure we
+                        // set permissions more loosely
+                        this.executionDirectory = Files.createTempDirectory(Paths.get(myLogBasename), "jenkinsPBS_").toString();
+                        if(this.runUser.length() > 0) {
+                                Files.setPosixFilePermissions(Paths.get(this.executionDirectory),
+                                                              PosixFilePermissions.fromString("rwxrwxrwx"));
+                        }
+                        listener.getLogger().println("Created working directory '" + this.executionDirectory + "' with permissions '" +
+                                                     PosixFilePermissions.toString(Files.getPosixFilePermissions(Paths.get(this.executionDirectory))) + "'");
+                } catch(IOException e) {
+                        throw new PBSException("Cannot create a QSub task because cannot create working directory");
+                }
+                
+                if(logHostname.length() > 0) {
+                        this.errFileName = logHostname + ":" + Paths.get(this.executionDirectory, "err").toString();
+                        this.outFileName = logHostname + ":" + Paths.get(this.executionDirectory, "out").toString();
+                } else {
+                        this.errFileName = Paths.get(this.executionDirectory, "err").toString();
+                        this.outFileName = Paths.get(this.executionDirectory, "out").toString();
+                }
 	}
 	
 	public Boolean call() {
-		FileWriter writer = null;
-		try {
-			File tmpScript = File.createTempFile("pbs", "script");
-			writer = new FileWriter(tmpScript);
-			writer.write(script);
-			writer.flush();
-			writer.close();
-			listener.getLogger().println("PBS script: " + tmpScript.getAbsolutePath());
-			String jobId = PBS.qsub(tmpScript.getAbsolutePath());
+		OutputStream tmpScriptOut = null;
+		try {   
+			Path tmpScript = Paths.get(this.executionDirectory, "script");
+                        tmpScriptOut = Files.newOutputStream(tmpScript);
+                        tmpScriptOut.write(script.getBytes());
+                        tmpScriptOut.flush();
+                        
+			listener.getLogger().println("PBS script: " + tmpScript.toString());
+                        String[] argList;
+                        if(this.runUser.length() > 0) {
+                                argList = new String[]{"-P", this.runUser, "-e", this.errFileName,
+                                                       "-o", this.outFileName, tmpScript.toString(),
+                                                       "-W", "umask=022"};
+                        } else {
+                                argList = new String[]{"-e", this.errFileName, "-o", this.outFileName,
+                                                       tmpScript.toString()};
+                        }
+                        String jobId = PBS.qsub(argList, this.environment);
 			
 			listener.getLogger().println("PBS Job submitted: " + jobId);
 			
@@ -86,8 +135,8 @@ public class Qsub implements Callable<Boolean, PBSException> {
 			throw new PBSException("Failed to create temp script");
 		} finally {
 			try {
-				if (writer != null)
-					writer.close();
+				if (tmpScriptOut != null)
+					tmpScriptOut.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -112,29 +161,100 @@ public class Qsub implements Callable<Boolean, PBSException> {
 	}
 	
 	private boolean loopSeek(String jobId) {
-		while (true) {
-			CommandOutput cmd = PBS.traceJob(jobId, numberOfDays);
+                boolean toReturn = false;
+                while (true) {
+                        CommandOutput cmd = PBS.traceJob(jobId, numberOfDays);
 			
-			String out = cmd.getOutput();
-			//String err = cmd.getError();
+                        String out = cmd.getOutput();
+                        //String err = cmd.getError();
 			
-//			listener.getLogger().println(out);
-//			listener.getLogger().println("----");
-			Matcher matcher = JOB_STATUS_REGEX.matcher(out.toString());
-			if (matcher.find()) {
-				String state = matcher.group(1);
-				listener.getLogger().println("Found job state " + state);
-				if ("COMPLETE".equals(state))
-					return true;
-				return false;
-			}
-			try {
-				//listener.getLogger().println("Sleeping for " + span + "ms");
-				Thread.sleep(span);
-			} catch (InterruptedException e) {}
+                        //listener.getLogger().println(out);
+                        //listener.getLogger().println("----");
+                        Matcher matcher = JOB_STATUS_REGEX.matcher(out.toString());
+                        if (matcher.find()) {
+                                String state = matcher.group(1);
+                                listener.getLogger().println("Found job state " + state);
+                                if ("COMPLETE".equals(state)) {
+                                        // Now we look for the status
+                                        matcher = JOB_SUBSTATUS_REGEX.matcher(out.toString());
+                                        if(matcher.find()) {
+                                                state = matcher.group(1);
+                                                listener.getLogger().println("Found run job status of " + state);
+                                                listener.getLogger().println("---- Remote job output log ----");
+                                                
+                                                InputStream outFile = null;
+                                                try {
+                                                        outFile = Files.newInputStream(Paths.get(this.executionDirectory, "out"));
+                                                        this.outputFileToLogger(outFile);
+                                                } catch(IOException e) {
+                                                        listener.getLogger().println("ERROR: CANNOT PRINT OUT OUTPUT LOG");
+                                                } finally {
+                                                        try {
+                                                                if(outFile != null) {
+                                                                        outFile.close();
+                                                                }
+                                                        } catch(IOException e) {
+                                                                e.printStackTrace();
+                                                        }
+                                                }
+                                                listener.getLogger().println("---- End of remote job output log ----");
+                                                listener.getLogger().println("---- Remote job error log ----");
+                                                outFile = null;
+                                                try {
+                                                        outFile = Files.newInputStream(Paths.get(this.executionDirectory, "err"));
+                                                        this.outputFileToLogger(outFile);
+                                                } catch(IOException e) {
+                                                        listener.getLogger().println("ERROR: CANNOT PRINT OUT ERROR LOG");
+                                                } finally {
+                                                        try {
+                                                                if(outFile != null) {
+                                                                        outFile.close();
+                                                                }
+                                                        } catch(IOException e) {
+                                                                e.printStackTrace();
+                                                        }
+                                                }
+                                                listener.getLogger().println("---- End of remote job error log ----");
+
+                                                // Return error code of the sub job
+                                                toReturn = "0".equals(state);
+                                                break;
+                                        }
+                                }
+                                break;
+                        }
+                        try {
+                                //listener.getLogger().println("Sleeping for " + span + "ms");
+                                Thread.sleep(span);
+                        } catch (InterruptedException e) {}
 		}
+                // We now know what to return but we can destroy the directory
+                try {
+                        Files.delete(Paths.get(this.executionDirectory, "out"));
+                        Files.delete(Paths.get(this.executionDirectory, "err"));
+                } catch(IOException e) {
+                        // Ignore
+                        listener.getLogger().println("Warning: Cannot remove log and/or error files");
+                }
+                try {
+                        Files.delete(Paths.get(this.executionDirectory, "script"));
+                        Files.delete(Paths.get(this.executionDirectory));
+                } catch(IOException e) {
+                        //Ignore
+                        listener.getLogger().println("Warning: Cannot remove script and work directory");
+                }
+                return toReturn;
 	}
 
+        private void outputFileToLogger(InputStream toOutput) throws IOException {
+                byte[] buffer = new byte[4096];
+                int readCount = toOutput.read(buffer);
+                while(readCount > 0) {
+                        listener.getLogger().write(buffer, 0, readCount);
+                        readCount = toOutput.read(buffer);
+                }
+        }
+        
 //	public static void main(String[] args) {
 //		String out = "Job: 128.localhost\n" + 
 //				"\n" + 

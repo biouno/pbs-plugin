@@ -8,6 +8,18 @@
         <f:entry title="${%Span time before checking if job is running in ms}" help="">
             <f:textbox name="PBSBuilder.span" value="${instance.span}" />
         </f:entry>
+
+        <f:entry title="${%Run-as user}" help="">
+            <f:textbox name="PBSBuilder.runUser" value="${instance.runUser}" />
+        </f:entry>
+
+        <f:entry title="${%Hostname for logs}" help="">
+            <f:textbox name="PBSBuilder.logHostname" value="${instance.logHostname}" />
+        </f:entry>
+
+        <f:entry title="${%Base path for logs}" help="">
+            <f:textbox name="PBSBuilder.logBasename" value="${instance.logBasename}" />
+        </f:entry>           
     </f:section>        
         
 </j:jelly>
