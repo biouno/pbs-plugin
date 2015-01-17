@@ -26,21 +26,21 @@ package jenkins.plugins.pbs.tasks;
 import hudson.model.BuildListener;
 import hudson.remoting.Callable;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.remoting.RoleChecker;
 
 import com.tupilabs.pbs.PBS;
-import com.tupilabs.pbs.model.Job;
 import com.tupilabs.pbs.util.CommandOutput;
 import com.tupilabs.pbs.util.PBSException;
 
@@ -254,6 +254,11 @@ public class Qsub implements Callable<Boolean, PBSException> {
                         readCount = toOutput.read(buffer);
                 }
         }
+
+		@Override
+		public void checkRoles(RoleChecker checker) throws SecurityException {
+			// TODO Auto-generated method stub
+		}
         
 //	public static void main(String[] args) {
 //		String out = "Job: 128.localhost\n" + 

@@ -23,6 +23,8 @@
  */
 package jenkins.plugins.pbs.tasks;
 
+import org.jenkinsci.remoting.RoleChecker;
+
 import hudson.remoting.Callable;
 import jenkins.plugins.pbs.model.PBSJob;
 
@@ -56,6 +58,11 @@ public class TraceJob implements Callable<PBSJob, Throwable>{
 	public PBSJob call() throws Throwable {
 		final CommandOutput commandOutput = PBS.traceJob(jobId, this.numberOfDays);
 		return new PBSJob(jobId, commandOutput.getOutput(), commandOutput.getError());
+	}
+
+	@Override
+	public void checkRoles(RoleChecker checker) throws SecurityException {
+		// TODO Auto-generated method stub
 	}
 
 }

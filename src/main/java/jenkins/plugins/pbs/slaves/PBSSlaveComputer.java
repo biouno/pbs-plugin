@@ -32,6 +32,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.jenkinsci.remoting.RoleChecker;
+
 import com.tupilabs.pbs.PBS;
 import com.tupilabs.pbs.model.Job;
 import com.tupilabs.pbs.model.Queue;
@@ -78,6 +80,12 @@ public class PBSSlaveComputer extends SlaveComputer {
 		public List<Queue> call() {
             return PBS.qstatQueues();
         }
+
+		@Override
+		public void checkRoles(RoleChecker checker) throws SecurityException {
+			// TODO Auto-generated method stub
+			
+		}
     }
 	
 	private static final class GetPBSJobs implements Callable<List<Job>,RuntimeException> {
@@ -93,6 +101,11 @@ public class PBSSlaveComputer extends SlaveComputer {
             }
             return jobs;
         }
+		@Override
+		public void checkRoles(RoleChecker checker) throws SecurityException {
+			// TODO Auto-generated method stub
+			
+		}
     }
 
 }
