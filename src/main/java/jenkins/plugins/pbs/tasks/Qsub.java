@@ -26,6 +26,7 @@ package jenkins.plugins.pbs.tasks;
 import hudson.model.BuildListener;
 import hudson.remoting.Callable;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -37,6 +38,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.remoting.RoleChecker;
@@ -91,7 +93,16 @@ public class Qsub implements Callable<Boolean, PBSException> {
         try {
             // If we are running as another user, we are going to make sure we
             // set permissions more loosely
-            this.executionDirectory = Files.createTempDirectory(Paths.get(myLogBasename), "jenkinsPBS_").toString();
+        	Path tmpDir = Files.createTempDirectory(Paths.get(myLogBasename), "jenkinsPBS_");
+        	File tmpDirFile = tmpDir.toFile();
+        	if (!tmpDirFile.exists()) {
+        		if (!tmpDirFile.mkdirs()) {
+        			listener.getLogger().println("Failed to create working directory: " + tmpDir.toString());
+        			throw new PBSException("Failed to create working directory: " + tmpDir.toString());
+        		}
+        	}
+        	
+            this.executionDirectory = tmpDir.toString();
             if (this.runUser.length() > 0) {
                 Files.setPosixFilePermissions(
                         Paths.get(this.executionDirectory),
@@ -104,6 +115,7 @@ public class Qsub implements Callable<Boolean, PBSException> {
                 )
             );
         } catch (IOException e) {
+        	listener.fatalError(e.getMessage(), e);
             throw new PBSException("Failed to create working directory: " + e.getMessage(), e);
         }
 
@@ -138,6 +150,7 @@ public class Qsub implements Callable<Boolean, PBSException> {
 
             return this.seekEnd(jobId, numberOfDays, span);
         } catch (IOException e) {
+        	e.printStackTrace(listener.getLogger());
             throw new PBSException("Failed to create temp script");
         } finally {
             IOUtils.closeQuietly(tmpScriptOut);
