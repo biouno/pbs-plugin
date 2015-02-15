@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.remoting.RoleChecker;
@@ -55,7 +54,7 @@ public class Qsub implements Callable<Boolean, PBSException> {
 
     private static final long serialVersionUID = -8294426519319612072L;
 
-    private static final String REGEX_JOB_STATUS = "JOB_SUBSTATE_(.*)$";
+    private static final String REGEX_JOB_STATUS = "(JOB_SUBSTATE_(.*)$|dequeuing [^,]+, state (.*)$)";
     private static final String REGEX_JOB_SUBSTATUS = "Exit_status=([0-9]+)";
     private static final Pattern JOB_SUBSTATUS_REGEX = Pattern.compile(REGEX_JOB_SUBSTATUS, Pattern.MULTILINE);
     private static final Pattern JOB_STATUS_REGEX = Pattern.compile(REGEX_JOB_STATUS, Pattern.MULTILINE);
@@ -65,10 +64,12 @@ public class Qsub implements Callable<Boolean, PBSException> {
     private final long span;
     private final String runUser;
     private final BuildListener listener;
+    private final String logHostname;
+	private final String logBasename;
     private final Map<String, String> environment;
-    private final String executionDirectory;
-    private final String errFileName;
-    private final String outFileName;
+    private String executionDirectory;
+    private String errFileName;
+    private String outFileName;
 
     /**
      * Create a new qsub command.
@@ -87,8 +88,12 @@ public class Qsub implements Callable<Boolean, PBSException> {
         this.runUser = runUser;
         this.listener = listener;
         this.environment = environment;
+        this.logHostname = logHostname;
+        this.logBasename = logBasename;
+    }
 
-        final String myLogBasename = (logBasename.length() > 0) ? logBasename : System.getenv("java.io.tmpdir");
+    public Boolean call() {
+    	final String myLogBasename = (logBasename.length() > 0) ? logBasename : System.getenv("java.io.tmpdir");
 
         try {
             // If we are running as another user, we are going to make sure we
@@ -126,9 +131,7 @@ public class Qsub implements Callable<Boolean, PBSException> {
             this.errFileName = Paths.get(this.executionDirectory, "err").toString();
             this.outFileName = Paths.get(this.executionDirectory, "out").toString();
         }
-    }
-
-    public Boolean call() {
+        
         OutputStream tmpScriptOut = null;
         try {
             Path tmpScript = Paths.get(this.executionDirectory, "script");
@@ -187,7 +190,13 @@ public class Qsub implements Callable<Boolean, PBSException> {
             // listener.getLogger().println("----");
             Matcher matcher = JOB_STATUS_REGEX.matcher(out.toString());
             if (matcher.find()) {
-                String state = matcher.group(1);
+            	String state = null;
+            	if (matcher.groupCount() > 2) {
+            		state = matcher.group(3);
+            	}
+                if (StringUtils.isBlank(state)) {
+                	state = matcher.group(1);
+                }
                 listener.getLogger().println("Found job state " + state);
                 if ("COMPLETE".equals(state)) {
                     // Now we look for the status
