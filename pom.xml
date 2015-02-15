@@ -12,7 +12,7 @@
 	<groupId>org.biouno</groupId>
 	<artifactId>pbs</artifactId>
 	<name>PBS Plug-in</name>
-	<version>0.2-SNAPSHOT</version>
+	<version>0.2</version>
 	<packaging>hpi</packaging>
 	<description>This plug-in integrates Jenkins to PBS clusters.</description>
 
@@ -59,7 +59,8 @@
 		<connection>scm:git:git://github.com/biouno/pbs-plugin.git</connection>
 		<developerConnection>scm:git:git@github.com:biouno/pbs-plugin.git</developerConnection>
 		<url>http://github.com/biouno/pbs-plugin</url>
-	</scm>
+	  <tag>pbs-0.2</tag>
+  </scm>
 
 	<repositories>
 		<repository>
