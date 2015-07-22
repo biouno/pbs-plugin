@@ -1,4 +1,5 @@
 <?jelly escape-by-default='true'?>
 <div>
-  Detalhe
+  Adds a PBS slave. This slave needs the pbs client installed to communicate with
+  the servers.
 </div>
