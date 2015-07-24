@@ -104,7 +104,7 @@ public class PBSBuilder extends Builder {
      */
     public static class PBSBuilderDescriptor extends BuildStepDescriptor<Builder> {
 
-        private static final Long DEFAULT_SPAN_TIME_MS = 300L;
+        private static final Long DEFAULT_SPAN_TIME_MS = 15000L;
 
 		private Integer numberOfDays;
         private Long span;
@@ -128,9 +128,9 @@ public class PBSBuilder extends Builder {
             if (span == null || this.span < 0) {
                 span = DEFAULT_SPAN_TIME_MS;
             }
-            runUser = json.optString("runUser", "");
-            logHostname = json.optString("logHostname", "");
-            logBasename = json.optString("logBasename", "");
+            runUser = json.optString("runUser", "root");
+            logHostname = json.optString("logHostname", "localhost");
+            logBasename = json.optString("logBasename", "/tmp");
             save();
             return Boolean.TRUE;
         }

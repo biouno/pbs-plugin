@@ -1,9 +1,9 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
     <f:block><p><strong>PBS Configuration</strong></p></f:block>
-    <f:entry title="${%Script}" help="">
+    
+    <f:entry title="${%Script}" help="${rootURL}/../plugin/pbs/help-pbs-script.html">
         <f:textarea name="PBSBuilder.script" value="${instance.script}" />
     </f:entry>
-
     
 </j:jelly>
