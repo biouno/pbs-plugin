@@ -2,62 +2,88 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt">
   <l:pane width="3" title="PBS Status" id="pbs">
     <j:forEach var="computer" items="${it.computers}">
-        <tbody>
-            <tr>
-                <th class='pane' colspan='3'>
-                    Jenkins slave: <a href="${rootURL}/computer/${computer.name}">${computer.name}</a>
-                </th>
-            </tr>
-        </tbody>
-        <colgroup>
-            <col width="1*"></col>
-            <col width="200*"></col>
-            <col width="24"></col>
-        </colgroup>
-        <tbody>
+      <thead>
+        <tr>
+          <th class='pane' colspan='3'>
+            Jenkins slave: <a href="${rootURL}/computer/${computer.name}">${computer.name}</a>
+          </th>
+        </tr>
+      </thead>
+      <colgroup>
+        <col width="1*"></col>
+        <col width="200*"></col>
+        <col width="24"></col>
+      </colgroup>
+      <tbody>
+        <j:choose>
+          <j:when test="${computer.getQueues().size() gt 0}">
             <j:forEach var="queue" items="${computer.queues}">
-            <tr>
+              <tr>
                 <th class='pane' colspan='3'>Queue: ${queue.name}</th>
-            </tr>
-                <j:forEach var="job" items="${computer.getJobs(queue)}">
-            <tr>
-                <td class='pane'><a href="${rootURL}/pbsJob/index?jobId=${job.id}&amp;slaveName=${computer.name}">${job.id}</a></td>
-                <td class='pane'>${job.name}</td>
-                <td class='pane'></td>
-            </tr>
-                </j:forEach>
+              </tr>
+              <j:choose>
+                <j:set var="jobs" value="${computer.getJobs(queue)}" />
+                  <j:when test="${jobs.size() gt 0}">
+                    <j:forEach var="job" items="">
+                      <tr>
+                        <td class='pane'>
+                          <a href="${rootURL}/pbsJob/index?jobId=${job.id}&amp;slaveName=${computer.name}">${job.id}</a>
+                        </td>
+                        <td class='pane'>${job.name}</td>
+                        <td class='pane'></td>
+                      </tr>
+                    </j:forEach>
+                  </j:when>
+                <j:otherwise>
+                  <tr>
+                    <td colspan="3">No jobs in this queue.</td>
+                  </tr>
+                </j:otherwise>
+              </j:choose>
             </j:forEach>
+          </j:when>
+          <j:otherwise>
             <tr>
-                <td colspan="3">
-                  <form method='get' action='${rootURL}/pbsJob/index'>
-                    <input type="hidden" name="slaveName" value="${computer.name}" />
-                    <table boder="0">
-                        <tr>
-                            <td>
-                                <label for='jobId'>PBS Job ID</label>
-                            </td>
-                            <td>
-                                <input type='text' name='jobId' id='jobId' />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <label for='numberOfDays'>Number of days</label>
-                            </td>
-                            <td>
-                                <input type='text' name='numberOfDays' id='numberOfDays' value='1' />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan='2'>
-                                <input type='submit' value='Search' />
-                            </td>
-                        </tr>
-                    </table>
-                  </form>
-                </td>
+              <td class="pane" colspan="3">No jobs in this queue.</td>
             </tr>
-        </tbody>
+          </j:otherwise>
+        </j:choose>
+        <tr style="border-top: 10px solid #EEEEEE;">
+          <th colspan="3">
+            Search for jobs in the server
+          </th>
+        </tr>
+        <tr>
+          <td colspan="3">
+            <form method='get' action='${rootURL}/pbsJob/index'>
+              <input type="hidden" name="slaveName" value="${computer.name}" />
+              <table boder="0">
+                <tr>
+                  <td>
+                    <label for='jobId'>PBS Job ID</label>
+                  </td>
+                  <td>
+                    <input type='text' name='jobId' id='jobId' />
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label for='numberOfDays'>Number of days</label>
+                  </td>
+                  <td>
+                    <input type='text' name='numberOfDays' id='numberOfDays' value='1' />
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan='2'>
+                    <input type='submit' value='Search' />
+                  </td>
+                </tr>
+              </table>
+            </form>
+          </td>
+        </tr>
+      </tbody>
     </j:forEach>
   </l:pane>
 </j:jelly>

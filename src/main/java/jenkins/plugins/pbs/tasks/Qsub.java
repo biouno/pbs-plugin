@@ -54,10 +54,11 @@ public class Qsub implements Callable<Boolean, PBSException> {
 
     private static final long serialVersionUID = -8294426519319612072L;
 
-    private static final String REGEX_JOB_STATUS = "(JOB_SUBSTATE_(.*)$|dequeuing [^,]+, state (.*)$)";
-    private static final String REGEX_JOB_SUBSTATUS = "Exit_status=([0-9]+)";
-    private static final Pattern JOB_SUBSTATUS_REGEX = Pattern.compile(REGEX_JOB_SUBSTATUS, Pattern.MULTILINE);
-    private static final Pattern JOB_STATUS_REGEX = Pattern.compile(REGEX_JOB_STATUS, Pattern.MULTILINE);
+    private static final String REGEX_JOB_STATUS = "(job_substate_(.*)$|exit_status=|dequeuing [^,]+, state (.*)$)";
+    private static final Pattern JOB_STATUS_REGEX = Pattern.compile(REGEX_JOB_STATUS, Pattern.MULTILINE|Pattern.CASE_INSENSITIVE);
+    
+    private static final String REGEX_JOB_SUBSTATUS = "exit_status=([0-9]+)";
+    private static final Pattern JOB_SUBSTATUS_REGEX = Pattern.compile(REGEX_JOB_SUBSTATUS, Pattern.MULTILINE|Pattern.CASE_INSENSITIVE);
 
     private final String script;
     private final int numberOfDays;
@@ -181,26 +182,27 @@ public class Qsub implements Callable<Boolean, PBSException> {
     private boolean loopSeek(String jobId) {
         boolean toReturn = false;
         while (true) {
-            CommandOutput cmd = PBS.traceJob(jobId, numberOfDays);
+            CommandOutput cmd = PBS.traceJob(jobId, numberOfDays, true /* quiet mode */);
 
             final String out = cmd.getOutput();
             // String err = cmd.getError();
 
             // listener.getLogger().println(out);
             // listener.getLogger().println("----");
-            Matcher matcher = JOB_STATUS_REGEX.matcher(out.toString());
+            Matcher matcher = JOB_STATUS_REGEX.matcher(out);
             if (matcher.find()) {
             	String state = null;
-            	if (matcher.groupCount() > 2) {
-            		state = matcher.group(3);
+            	if (matcher.groupCount() > 1) {
+            		state = matcher.group(2);
             	}
                 if (StringUtils.isBlank(state)) {
                 	state = matcher.group(1);
                 }
+                state = state.toLowerCase();
                 listener.getLogger().println("Found job state " + state);
-                if ("COMPLETE".equals(state)) {
+                if (state.contains("complete") || state.contains("exit_status")) {
                     // Now we look for the status
-                    matcher = JOB_SUBSTATUS_REGEX.matcher(out.toString());
+                    matcher = JOB_SUBSTATUS_REGEX.matcher(out);
                     if (matcher.find()) {
                         state = matcher.group(1);
                         listener.getLogger().println("Found run job status of " + state);
